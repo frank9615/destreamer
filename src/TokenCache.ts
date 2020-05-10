@@ -36,7 +36,7 @@ export class TokenCache {
         }
 
         console.info(bgGreen.black(`\nAccess token still good for ${timeLeftInMinutes} minutes.\n`));
-
+        
         let session: Session = {
             AccessToken: j.AccessToken,
             ApiGatewayUri: j.ApiGatewayUri,

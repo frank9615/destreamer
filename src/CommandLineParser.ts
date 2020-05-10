@@ -23,16 +23,23 @@ export const argv = yargs.options({
         describe: 'Microsoft account username',
         demandOption: false
     },
-    polimicode: {
+    unipaname: {
         alias: 'c',
         type: 'string',
-        describe: 'Polimi person code',
+        describe: 'Unipa person code',
         demandOption: false
     },
-    polimipass: {
+    unipapass: {
         alias: 'p',
         type: 'string',
-        describe: 'Polimi password',
+        describe: 'Unipa password',
+        demandOption: false
+    },
+    simultaneouslyDownloads: {
+        alias: 'n',
+        describe: 'Maximum simultaneously downloads',
+        type: 'number',
+        default: 5,
         demandOption: false
     },
     outputDirectory: {
@@ -47,9 +54,9 @@ export const argv = yargs.options({
         type: 'string',
         demandOption: false
     },
-    noExperiments: {
+    experiments: {
         alias: 'x',
-        describe: `Do not attempt to render video thumbnails in the console`,
+        describe: `Render video thumbnails in the console`,
         type: 'boolean',
         default: false,
         demandOption: false
@@ -69,20 +76,20 @@ export const argv = yargs.options({
         demandOption: false
     }
 })
-/**
- * Do our own argv magic before destreamer starts.
- * ORDER IS IMPORTANT!
- * Do not mess with this.
- */
-.check(() => isShowHelpRequest())
-.check(argv => checkRequiredArgument(argv))
-.check(argv => checkVideoUrlsArgConflict(argv))
-.check(argv => checkOutputDirArgConflict(argv))
-.check(argv => checkVideoUrlsInput(argv))
-.check(argv => windowsFileExtensionBadBehaviorFix(argv))
-.check(argv => mergeVideoUrlsArguments(argv))
-.check(argv => mergeOutputDirArguments(argv))
-.argv;
+    /**
+     * Do our own argv magic before destreamer starts.
+     * ORDER IS IMPORTANT!
+     * Do not mess with this.
+     */
+    .check(() => isShowHelpRequest())
+    .check(argv => checkRequiredArgument(argv))
+    .check(argv => checkVideoUrlsArgConflict(argv))
+    .check(argv => checkOutputDirArgConflict(argv))
+    .check(argv => checkVideoUrlsInput(argv))
+    .check(argv => windowsFileExtensionBadBehaviorFix(argv))
+    .check(argv => mergeVideoUrlsArguments(argv))
+    .check(argv => mergeOutputDirArguments(argv))
+    .argv;
 
 function hasNoArgs() {
     return process.argv.length === 2;
@@ -133,7 +140,7 @@ function checkVideoUrlsInput(argv: any) {
         throw new Error(colors.red(CLI_ERROR.MISSING_REQUIRED_ARG));
 
     const t = argv.videoUrls[0] as string;
-    if (t.substring(t.length-4) === '.txt')
+    if (t.substring(t.length - 4) === '.txt')
         throw new Error(colors.red(CLI_ERROR.FILE_INPUT_VIDEOURLS_ARG));
 
     return true;

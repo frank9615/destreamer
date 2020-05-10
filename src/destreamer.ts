@@ -63,24 +63,24 @@ async function DoInteractiveLogin(url: string, myargv: any): Promise<Session> {
         await page.keyboard.type(username);
         await page.click('input[type="submit"]');
 
-        if (myargv.polimicode || myargv.polimipass) {
-            await browser.waitForTarget(target => target.url().includes("aunicalogin.polimi.it/"), { timeout: 150000 });
+        if (myargv.unipaname || myargv.unipapass) {
+            await browser.waitForTarget(target => target.url().includes("idp.unipa.it/"), { timeout: 150000 });
             await sleep(3000);
         }
 
-        if (myargv.polimicode) {
-            await page.click('#login');
-            await page.keyboard.type(myargv.polimicode);
+        if (myargv.unipaname) {
+            await page.click('#username');
+            await page.keyboard.type(myargv.unipaname);
         }
 
-        if (myargv.polimipass) {
+        if (myargv.unipapass) {
             await page.click('#password');
-            await page.keyboard.type(myargv.polimipass);
+            await page.keyboard.type(myargv.unipapass);
         }
 
-        if (myargv.polimicode && myargv.polimipass) {
-            await page.click('button[type="submit"]');
-            
+        if (myargv.unipaname && myargv.unipapass) {
+            await page.click('input[type="submit"]');
+
             await browser.waitForTarget(target => target.url().includes("login.microsoftonline.com/"), { timeout: 150000 });
             await sleep(3000);
             await page.click('input[type="submit"]');
@@ -152,8 +152,9 @@ function extractVideoGuid(videoUrls: string[]): string[] {
 async function downloadVideo(videoUrls: string[], outputDirectories: string[], session: Session) {
     const videoGuids = extractVideoGuid(videoUrls);
 
+    console.log(`Number of simultaneously downloads: ${argv.simultaneouslyDownloads}`);
     console.log('Fetching metadata...');
-
+    
     const metadata: Metadata[] = await getVideoMetadata(videoGuids, session, argv.verbose);
 
     if (argv.simulate) {
@@ -171,8 +172,9 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
     if (argv.verbose)
         console.log(outputDirectories);
 
-    const outDirsIdxInc = outputDirectories.length > 1 ? 1:0;
-    for (let i=0, j=0, l=metadata.length; i<l; ++i, j+=outDirsIdxInc) {
+    const outDirsIdxInc = outputDirectories.length > 1 ? 1 : 0;
+
+    for (let i = 0, j = 0, l = metadata.length; i < l; ++i, j += outDirsIdxInc) {
         const video = metadata[i];
         const pbar = new cliProgress.SingleBar({
             barCompleteChar: '\u2588',
@@ -181,24 +183,24 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
             barsize: Math.floor(process.stdout.columns / 3),
             stopOnComplete: true,
             hideCursor: true,
-        });
+        }, cliProgress.Presets.legacy);
 
-        console.log(colors.yellow(`\nDownloading Video: ${video.title}\n`));
+        console.log(colors.yellow(`\nDownloading Video #${i}\n`) + colors.bgCyan('Title:') + colors.cyan(` ${video.title}\n`));
 
         video.title = makeUniqueTitle(sanitize(video.title) + ' - ' + video.date, outputDirectories[j]);
 
         // Very experimental inline thumbnail rendering
-        if (!argv.noExperiments)
+        if (argv.experiments)
             await drawThumbnail(video.posterImage, session.AccessToken);
 
-        console.info('Spawning ffmpeg with access token and HLS URL. This may take a few seconds...');
+        //console.info('Spawning ffmpeg with access token and HLS URL. This may take a few seconds...');
 
         // Try to get a fresh cookie, else gracefully fall back
         // to our session access token (Bearer)
         let freshCookie = await tokenCache.RefreshToken(session);
         let headers = `Authorization:\ Bearer\ ${session.AccessToken}`;
         if (freshCookie) {
-            console.info(colors.green('Using a fresh cookie.'));
+            console.info(colors.green('using a fresh cookie'));
             headers = `Cookie:\ ${freshCookie}`;
         }
 
@@ -208,13 +210,13 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
         ]));
         const ffmpegOutput = new FFmpegOutput(outputPath);
         const ffmpegCmd = new FFmpegCommand();
-        
+
         const cleanupFn = function () {
             pbar.stop();
 
             try {
                 fs.unlinkSync(outputPath);
-            } catch(e) {}
+            } catch (e) { }
         }
 
         pbar.start(video.totalChunks, 0, {
@@ -239,7 +241,7 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
 
             try {
                 fs.unlinkSync(outputPath);
-            } catch (e) {}
+            } catch (e) { }
 
             console.log(`\nffmpeg returned an error: ${error.message}`);
             process.exit(ERROR_CODE.UNK_FFMPEG_ERROR);
@@ -249,7 +251,7 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
 
         // let the magic begin...
         await new Promise((resolve: any, reject: any) => {
-            ffmpegCmd.on('success', (data:any) => {
+            ffmpegCmd.on('success', (data: any) => {
                 pbar.update(video.totalChunks); // set progress bar to 100%
                 console.log(colors.green(`\nDownload finished: ${outputPath}`));
                 resolve();
@@ -257,7 +259,7 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
 
             ffmpegCmd.spawn();
         });
-        
+
         process.off('SIGINT', cleanupFn);
     }
 }
