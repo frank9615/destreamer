@@ -14,14 +14,6 @@ This release would not have been possible without the code and time contributed 
 
 ## What's new
 
-- Major code refactoring
-- Dramatically improved error handling
-- We now have a token cache so we can reuse access tokens. This really means that within one hour you need to perform the interactive browser login only once.
-- We removed the dependency on `youtube-dl`
-- Getting to the HLS URL is dramatically more reliable as we dropped parsing the DOM for the video element in favor of calling the Microsoft Stream API
-- Fixed access token lifetime bugs (you no longer get a 403 Forbidden midway though your download list)
-- Fixed a major 2FA bug that would sometimes cause a timeout in our code
-- Fixed a wide variety of other bugs, maybe introduced a few new ones :)
 - Automatic authentication for polimi student in [this repository][polimi]
 
 ## Disclaimer
@@ -51,7 +43,7 @@ Note that destreamer won't run in an elevated (Administrator/root) shell. Runnin
 To build destreamer clone this repository, install dependencies and run the build script -
 
 ```sh
-$ git clone https://github.com/snobu/destreamer
+$ git clone https://github.com/frank9615/destreamer
 $ cd destreamer
 $ npm install
 $ npm run build
@@ -60,6 +52,7 @@ $ npm run build
 ## Usage
 
 ```
+
 $ ./destreamer.sh
 
 Options:
@@ -81,6 +74,9 @@ Options:
                                                       [boolean] [default: false]
   --noCleanup, --nc        Don't delete the downloaded video file when an FFmpeg
                            error occurs               [boolean] [default: false]
+  -c                       Unipa Username                               [string]
+  -p                       Unipa Password                               [string]
+  -x                       Anteprima Video            [boolean] [default: false]
 ```
 
 Download a video -
