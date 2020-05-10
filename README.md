@@ -12,9 +12,6 @@ _(Alternative artwork proposals are welcome! Submit one through an Issue.)_
 
 This release would not have been possible without the code and time contributed by two distinguished developers: [@lukaarma](https://github.com/lukaarma) and [@kylon](https://github.com/kylon). Thank you!
 
-## What's new
-
-- Automatic authentication for polimi student in [this repository][polimi]
 
 ## Disclaimer
 
