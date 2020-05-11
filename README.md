@@ -74,6 +74,7 @@ Options:
   -c                       Unipa Username                               [string]
   -p                       Unipa Password                               [string]
   -x                       Anteprima Video            [boolean] [default: false]
+  -n                       Multi Download                      [int][default: 1] 
 ```
 
 Download a video -
