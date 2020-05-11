@@ -39,7 +39,7 @@ export const argv = yargs.options({
         alias: 'n',
         describe: 'Maximum simultaneously downloads',
         type: 'number',
-        default: 5,
+        default: 1,
         demandOption: false
     },
     outputDirectory: {

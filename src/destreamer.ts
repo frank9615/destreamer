@@ -149,12 +149,12 @@ function extractVideoGuid(videoUrls: string[]): string[] {
     return videoGuids;
 }
 
-async function downloadVideo(videoUrls: string[], outputDirectories: string[], session: Session) {
+async function downloadVideo(videoUrls: string[], outputDirectories: string[], session: Session, multibar: cliProgress.MultiBar) {
     const videoGuids = extractVideoGuid(videoUrls);
 
     console.log(`Number of simultaneously downloads: ${argv.simultaneouslyDownloads}`);
     console.log('Fetching metadata...');
-    
+
     const metadata: Metadata[] = await getVideoMetadata(videoGuids, session, argv.verbose);
 
     if (argv.simulate) {
@@ -176,16 +176,9 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
 
     for (let i = 0, j = 0, l = metadata.length; i < l; ++i, j += outDirsIdxInc) {
         const video = metadata[i];
-        const pbar = new cliProgress.SingleBar({
-            barCompleteChar: '\u2588',
-            barIncompleteChar: '\u2591',
-            format: 'progress [{bar}] {percentage}% {speed} {eta_formatted}',
-            barsize: Math.floor(process.stdout.columns / 3),
-            stopOnComplete: true,
-            hideCursor: true,
-        }, cliProgress.Presets.legacy);
+        const pbar = multibar.create(0, 0, 0)
 
-        console.log(colors.yellow(`\nDownloading Video #${i}\n`) + colors.bgCyan('Title:') + colors.cyan(` ${video.title}\n`));
+        //console.log(colors.yellow(`\nDownloading Video #${i}\n`) + colors.bgCyan('Title:') + colors.cyan(` ${video.title}\n`));
 
         video.title = makeUniqueTitle(sanitize(video.title) + ' - ' + video.date, outputDirectories[j]);
 
@@ -200,7 +193,7 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
         let freshCookie = await tokenCache.RefreshToken(session);
         let headers = `Authorization:\ Bearer\ ${session.AccessToken}`;
         if (freshCookie) {
-            console.info(colors.green('using a fresh cookie'));
+            //console.info(colors.green('using a fresh cookie'));
             headers = `Cookie:\ ${freshCookie}`;
         }
 
@@ -220,7 +213,8 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
         }
 
         pbar.start(video.totalChunks, 0, {
-            speed: '0'
+            speed: '0',
+            title: video.title
         });
 
         // prepare ffmpeg command line
@@ -267,16 +261,33 @@ async function downloadVideo(videoUrls: string[], outputDirectories: string[], s
 async function main() {
     await init(); // must be first
 
+    const multibar = new cliProgress.MultiBar({
+        barCompleteChar: '\u2588',
+        barIncompleteChar: '\u2591',
+        format: 'progress [{bar}] {percentage}% {speed} {eta_formatted} | {title}',
+        barsize: Math.floor(process.stdout.columns / 3),
+        stopOnComplete: true,
+        hideCursor: true,
+    }, cliProgress.Presets.legacy);
+
     const outDirs: string[] = getOutputDirectoriesList(argv.outputDirectory as string);
     const videoUrls: string[] = parseVideoUrls(argv.videoUrls);
     let session: Session;
 
     checkOutDirsUrlsMismatch(outDirs, videoUrls);
     makeOutputDirectories(outDirs); // create all dirs now to prevent ffmpeg panic
-
     session = tokenCache.Read() ?? await DoInteractiveLogin(videoUrls[0], argv);
 
-    downloadVideo(videoUrls, outDirs, session);
+    let forks = videoUrls.length / argv.simultaneouslyDownloads;
+    if (forks < 1) {
+        console.log(colors.red("\n Errore: Parametro -n non valido "));
+    }
+    for (let i = 0, j = 0; i < argv.simultaneouslyDownloads; i++, j += forks) {
+        let temp = videoUrls.slice(j, j + forks)
+        downloadVideo(temp, outDirs, session, multibar);
+
+    }
+
 }
 
 
